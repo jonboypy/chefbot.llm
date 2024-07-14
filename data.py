@@ -1,5 +1,6 @@
 # Imports
 import json
+import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer
@@ -19,26 +20,29 @@ class ChefBotDataset(Dataset):
     def __init__(self, data: list[dict], tokenizer: AutoTokenizer) -> None:
         super().__init__()
         self._data = data
-        self.tokenizer = tokenizer
+        self._tokenizer = tokenizer
 
     def __len__(self) -> int:
         return len(self._data)
 
-    def __getitem__(self, index: int) -> tuple[Tensor]:
+    def __getitem__(self, index: int) -> tuple:
         article = self._data[index]['article']
         task = self._data[index]['task']
         response = self._data[index]['response']
-        messages = [
+        prompt = [
             {"role": "system",
              "content": ("You are a kitchen assistant chatbot for a chef. "
                 f"The chef wants to make the recipe from this article: {article}")},
             {"role": "user",
              "content": ("Provide only a bulleted list of "
                          f"the recipe's {task}. Do not add any other text.")}]
-        tokens_x = self.tokenizer.apply_chat_template(
-            messages, return_tensors='pt', add_generation_prompt=True)
-        tokens_y = self.tokenizer.encode(response, return_tensors='pt')
-        return tokens_x, tokens_y
+        x = self._tokenizer.apply_chat_template(
+            prompt, return_tensors='pt', add_generation_prompt=True, padding=True)
+        y = self._tokenizer.encode(response, return_tensors='pt', padding=True)
+        x_len = x.size(-1)
+        x = torch.cat([x, y], -1)
+        y = torch.cat([torch.tensor([[-100 for _ in range(x_len)]]), y], -1)
+        return x, y
 
 
 class DataModule(LightningDataModule):
@@ -81,12 +85,18 @@ class DataModule(LightningDataModule):
             train_data = data_rorg[:train_len]
             val_data = data_rorg[train_len:]
             # (5) Instantiate training & validation datasets
-            self.train_ds = self.cfg.dataset.create_instance(
-                {'data': train_data, 'tokenizer': self.tokenizer})
-            self.val_ds = self.cfg.dataset.create_instance(
-                {'data': val_data, 'tokenizer': self.tokenizer})
+            self.train_ds = self.cfg.dataset.create_instance({'data': train_data})
+            self.val_ds = self.cfg.dataset.create_instance({'data': val_data})
         else:
             raise NotImplementedError
+        
+    def collate_fn(self, samples: list[tuple]) -> tuple[Tensor]:
+        x = [sample[0] for sample in samples]
+        y = [sample[1] for sample in samples]
+        x = torch.nn.utils.rnn.pad_sequence(
+            x, True, self.tokenizer.pad_token_id)
+        y = torch.nn.utils.rnn.pad_sequence(y, True, -100)
+        return x, y
         
     def train_dataloader(self) -> DataLoader:
         return self.cfg.train_dataloader.create_instance({'dataset': self.train_ds})

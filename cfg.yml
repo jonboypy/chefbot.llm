@@ -1,5 +1,17 @@
 litmodule:
+  tokenizer:
+    transformers.AutoTokenizer.from_pretrained:
+      pretrained_model_name_or_path: "Doctor-Shotgun/TinyLlama-1.1B-32k-Instruct"
   network:
+    transformers.AutoModelForCausalLM.from_pretrained:
+      pretrained_model_name_or_path: "Doctor-Shotgun/TinyLlama-1.1B-32k-Instruct"
+      torch_dtype: "torch.bfloat16"
+      device_map: "auto"
+  lora:
+    r: 8
+    inference_mode: False
+    lora_alpha: 32
+    lora_dropout: 0.1
 
 datamodule:
   dataset:
