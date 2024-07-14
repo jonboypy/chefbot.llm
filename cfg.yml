@@ -1,0 +1,13 @@
+litmodule:
+  network:
+
+datamodule:
+  dataset:
+    data.ChefBotDataset: {}
+  train_dataloader:
+    torch.utils.data.DataLoader: {batch_size: 2, shuffle: True}
+  val_dataloader:
+    torch.utils.data.DataLoader: {batch_size: 2, shuffle: False}
+
+trainer:
+  precision: 16-mixed

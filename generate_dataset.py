@@ -8,12 +8,13 @@ from transformers import pipeline
 from bs4 import BeautifulSoup
 import cloudscraper
 from urllib.parse import urlparse
+import unicodedata
 from tqdm import tqdm
 
 class DatasetGenerator:
     """
-    Generate a synthetic recipe article dataset with a HuggingFace model.
-
+    Generate a synthetic recipe article
+        dataset with a HuggingFace model.
     Args:
         hf_model_name: Identifying name of huggingface model.
         hf_access_token: Optional HuggingFace access token.
@@ -45,9 +46,7 @@ class DatasetGenerator:
             for url in tqdm(article_urls, unit='article', leave=False):
                 soup = BeautifulSoup(self._scraper.get(url).text, 'html.parser')
                 article = soup.get_text()
-                article = article.replace(u'\xa0', u' ').replace(u'\n', u' ')
-                article = re.sub(' +', ' ', article)
-                article = article.strip()
+                article = self._clean_article_text(article)
                 ingredients, instructions = self._extract_info(article)
                 sample = {'article': article, 'ingredients':
                           ingredients, 'instructions': instructions}
@@ -69,6 +68,15 @@ class DatasetGenerator:
                                      do_sample=True, temperature=0.6, top_p=0.9)
             output += [task_output[0]['generated_text'][-1]['content']]
         return tuple(output)
+    
+    def _clean_article_text(self, article: str) -> str:
+        article = re.sub(' +', ' ', article)
+        article = re.sub('\n+', '\n', article)
+        article = re.sub('\t+', '\t', article)
+        article = unicodedata.normalize("NFKD", article)
+        article = article.strip()
+        return article
+
 
 parser = argparse.ArgumentParser('Generate a synthetic recipe article dataset with a HuggingFace model.')
 parser.add_argument('-model', default='meta-llama/Meta-Llama-3-8B-Instruct')
