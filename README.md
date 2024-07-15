@@ -33,3 +33,10 @@
 - How much of a hurdle is it to target ANEs?
 
 - Can an article be opened directly from Pinterest?
+
+## TODO
+- test training []
+- test logging []
+- add other metrics to log (e.g. perplexity? example generations?) []
+- Generate full dataset []
+- train :-) []
