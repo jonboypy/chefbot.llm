@@ -8,6 +8,10 @@ from torch import Tensor
 
 class LitModule(ptl.LightningModule):
     """
+    PTL lightning module
+        defining the training of the model.
+    Args:
+        cfg: A configuration object defining training settings.
     """
     def __init__(self, cfg: Config) -> None:
         super().__init__()
@@ -16,7 +20,7 @@ class LitModule(ptl.LightningModule):
         self.net = cfg.network.create_instance()
         if cfg.has('lora'):
             peft_config = LoraConfig(task_type=TaskType.SEQ_2_SEQ_LM,
-                                     **self.cfg.lora.to_dict())
+                                     **self.cfg.lora.dict())
             self.net = get_peft_model(self.net, peft_config)
 
     def configure_optimizers(self):
@@ -54,7 +58,8 @@ class LitModule(ptl.LightningModule):
 
     class LoggingCallback(ptl.Callback):
         """
-        PTL Callback that handles logging to keep training code clean.
+        PTL Callback that handles
+            logging to keep training code clean.
         """
         def __init__(self) -> None:
             super().__init__()
