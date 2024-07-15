@@ -1,25 +1,35 @@
 litmodule:
-  tokenizer:
-    transformers.AutoTokenizer.from_pretrained:
-      pretrained_model_name_or_path: "Doctor-Shotgun/TinyLlama-1.1B-32k-Instruct"
-  network:
-    transformers.AutoModelForCausalLM.from_pretrained:
-      pretrained_model_name_or_path: "Doctor-Shotgun/TinyLlama-1.1B-32k-Instruct"
-      torch_dtype: "torch.bfloat16"
-      device_map: "auto"
-  lora:
-    r: 8
-    inference_mode: False
-    lora_alpha: 32
-    lora_dropout: 0.1
+  training.LitModule:
+    cfg:
+      tokenizer:
+        transformers.AutoTokenizer.from_pretrained():
+          pretrained_model_name_or_path: Doctor-Shotgun/TinyLlama-1.1B-32k-Instruct
+      network:
+        transformers.AutoModelForCausalLM.from_pretrained():
+          pretrained_model_name_or_path: Doctor-Shotgun/TinyLlama-1.1B-32k-Instruct
+          torch_dtype: bfloat16
+          device_map: auto
+      lora:
+        r: 8
+        inference_mode: False
+        lora_alpha: 32
+        lora_dropout: 0.1
 
 datamodule:
-  dataset:
-    data.ChefBotDataset: {}
-  train_dataloader:
-    torch.utils.data.DataLoader: {batch_size: 2, shuffle: True}
-  val_dataloader:
-    torch.utils.data.DataLoader: {batch_size: 2, shuffle: False}
+  data.DataModule:
+    cfg:
+      dataset:
+        data.ChefBotDataset: {}
+      train_dataloader:
+        torch.utils.data.DataLoader: {batch_size: 2, shuffle: True}
+      val_dataloader:
+        torch.utils.data.DataLoader: {batch_size: 2, shuffle: False}
 
 trainer:
-  precision: 16-mixed
+  lightning.pytorch.Trainer:
+    precision: bf16-mixed
+    max_epochs: 1
+    fast_dev_run: True
+    logger:
+      lightning.pytorch.loggers.WandbLogger: {project: chefbot.llm, save_dir: ./experiments, name: inital-test}
+    callbacks: [lightning.pytorch.callbacks.RichProgressBar: {}]
