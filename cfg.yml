@@ -14,10 +14,14 @@ litmodule:
         inference_mode: False
         lora_alpha: 32
         lora_dropout: 0.1
+      optimizer:
+        torch.optim.AdamW: {lr: 3.0e-4}
 
 datamodule:
   data.DataModule:
     cfg:
+      train_size: 0.5
+      data_src: ./dataset-test-2.json
       dataset:
         data.ChefBotDataset: {}
       train_dataloader:
@@ -28,8 +32,7 @@ datamodule:
 trainer:
   lightning.pytorch.Trainer:
     precision: bf16-mixed
-    max_epochs: 1
-    fast_dev_run: True
+    max_epochs: 5
     logger:
-      lightning.pytorch.loggers.WandbLogger: {project: chefbot.llm, save_dir: ./experiments, name: inital-test}
+      lightning.pytorch.loggers.WandbLogger: {project: chefbot_llm, save_dir: experiments, name: inital-test}
     callbacks: [lightning.pytorch.callbacks.RichProgressBar: {}]
