@@ -1,5 +1,4 @@
 # Imports
-from typing import Any
 import lightning.pytorch as ptl
 from peft import LoraConfig, TaskType, get_peft_model
 from utils import Config
@@ -19,7 +18,7 @@ class LitModule(ptl.LightningModule):
         self.tokenizer = cfg.tokenizer.create_instance()
         self.net = cfg.network.create_instance()
         if cfg.has('lora'):
-            peft_config = LoraConfig(task_type=TaskType.SEQ_2_SEQ_LM,
+            peft_config = LoraConfig(task_type=TaskType.CAUSAL_LM,
                                      **self.cfg.lora.dict())
             self.net = get_peft_model(self.net, peft_config)
 
@@ -39,21 +38,25 @@ class LitModule(ptl.LightningModule):
         results = {}
         x, y = batch
         output = self.net(input_ids=x, labels=y)
-        {'loss': output.loss, 'training_loss': output.loss}
+        results['loss'] = output.loss
+        results['training_loss'] = output.loss
+        results['training_perplexity'] = output.loss.exp()
         return results
 
     def validation_step(self, batch: tuple[Tensor]) -> dict[str, Tensor]:
         results = {}
         x, y = batch
         output = self.net(input_ids=x, labels=y)
-        {'validation_loss': output.loss}
+        results['validation_loss'] = output.loss
+        results['validation_perplexity'] = output.loss.exp()
         return results
 
     def test_step(self, batch: tuple[Tensor]) -> dict[str, Tensor]:
         results = {}
         x, y = batch
         output = self.net(input_ids=x, labels=y)
-        {'validation_loss': output.loss}
+        results['test_loss'] = output.loss
+        results['test_perplexity'] = output.loss.exp()
         return results
 
     class LoggingCallback(ptl.Callback):
