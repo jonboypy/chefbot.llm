@@ -1,9 +1,8 @@
 # Imports
 import lightning.pytorch as ptl
-from peft import LoraConfig, TaskType, get_peft_model
+from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 from utils import Config
 from torch import Tensor
-
 
 class LitModule(ptl.LightningModule):
     """
@@ -17,10 +16,11 @@ class LitModule(ptl.LightningModule):
         self.cfg = cfg
         self.tokenizer = cfg.tokenizer.create_instance()
         self.net = cfg.network.create_instance()
+        self.net = prepare_model_for_kbit_training(self.net)
         if cfg.has('lora'):
-            peft_config = LoraConfig(task_type=TaskType.CAUSAL_LM,
-                                     **self.cfg.lora.dict())
+            peft_config = LoraConfig(task_type=TaskType.CAUSAL_LM, **cfg.lora.dict())
             self.net = get_peft_model(self.net, peft_config)
+            self.net.print_trainable_parameters() 
 
     def configure_optimizers(self):
         opt = self.cfg.optimizer.create_instance(

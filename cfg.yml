@@ -7,32 +7,37 @@ litmodule:
       network:
         transformers.AutoModelForCausalLM.from_pretrained():
           pretrained_model_name_or_path: Doctor-Shotgun/TinyLlama-1.1B-32k-Instruct
-          torch_dtype: bfloat16
           device_map: auto
+          quantization_config:
+            transformers.BitsAndBytesConfig:
+              load_in_8bit: True
+              bnb_8bit_quant_type: int8
+              bnb_8bit_use_double_quant: True
+              bnb_8bit_compute_dtype: bfloat16
       lora:
         r: 8
         inference_mode: False
         lora_alpha: 32
         lora_dropout: 0.1
       optimizer:
-        torch.optim.AdamW: {lr: 3.0e-4}
+        torch.optim.Adam: {lr: 3.0e-4}
 
 datamodule:
   data.DataModule:
     cfg:
-      train_size: 0.5
-      data_src: ./dataset-test-2.json
+      train_size: 0.8
+      data_src: datasets/full-dataset-1.json
       dataset:
         data.ChefBotDataset: {}
       train_dataloader:
-        torch.utils.data.DataLoader: {batch_size: 2, shuffle: True}
+        torch.utils.data.DataLoader: {batch_size: 1, shuffle: True}
       val_dataloader:
-        torch.utils.data.DataLoader: {batch_size: 2, shuffle: False}
+        torch.utils.data.DataLoader: {batch_size: 1, shuffle: False}
 
 trainer:
   lightning.pytorch.Trainer:
-    precision: bf16-mixed
     max_epochs: 5
-    logger:
-      lightning.pytorch.loggers.WandbLogger: {project: chefbot_llm, save_dir: experiments, name: inital-test}
+    precision: bf16-true
+    #logger:
+    #  lightning.pytorch.loggers.WandbLogger: {project: chefbot_llm, save_dir: experiments, name: inital-test}
     callbacks: [lightning.pytorch.callbacks.RichProgressBar: {}]
