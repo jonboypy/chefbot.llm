@@ -53,7 +53,7 @@ class DatasetGenerator:
                 parsed_url = urlparse(url)
                 name = parsed_url.path[1:-1]
                 self._dataset[provider][name] = sample
-                break # TEST
+            break # TEST
         with open(self._dataset_file, 'w') as fp:
             json.dump(self._dataset, fp, indent=2)
 
@@ -65,7 +65,8 @@ class DatasetGenerator:
                                                f"The chef wants to make the recipe from this article: {article}")},
                 {"role": "user", "content": f"Provide only a bulleted list of the recipe's {task}. Do not add any other text."}]
             task_output = self._pipe(messages, max_new_tokens=1024, eos_token_id=self._terminators,
-                                     do_sample=True, temperature=0.6, top_p=0.9)
+                                     do_sample=True, temperature=0.6, top_p=0.9,
+                                     pad_token_id=self._pipe.tokenizer.eos_token_id)
             output += [task_output[0]['generated_text'][-1]['content']]
         return tuple(output)
     
