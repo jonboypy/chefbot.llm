@@ -10,17 +10,21 @@ litmodule:
           device_map: auto
           quantization_config:
             transformers.BitsAndBytesConfig:
-              load_in_8bit: True
-              bnb_8bit_quant_type: int8
-              bnb_8bit_use_double_quant: True
-              bnb_8bit_compute_dtype: bfloat16
+              load_in_4bit: True
+              bnb_4bit_quant_type: fp4
+              bnb_4bit_use_double_quant: True
+              bnb_4bit_compute_dtype: bfloat16
+              #load_in_8bit: True
+              #bnb_8bit_quant_type: int8
+              #bnb_8bit_use_double_quant: True
+              #bnb_8bit_compute_dtype: bfloat16
       lora:
-        r: 8
+        r: 4
         inference_mode: False
         lora_alpha: 32
         lora_dropout: 0.1
       optimizer:
-        torch.optim.Adam: {lr: 3.0e-4}
+        torch.optim.AdamW: {lr: 3.0e-4}
 
 datamodule:
   data.DataModule:
@@ -30,14 +34,14 @@ datamodule:
       dataset:
         data.ChefBotDataset: {}
       train_dataloader:
-        torch.utils.data.DataLoader: {batch_size: 1, shuffle: True}
+        torch.utils.data.DataLoader: {batch_size: 1, shuffle: True, num_workers: 8}
       val_dataloader:
-        torch.utils.data.DataLoader: {batch_size: 1, shuffle: False}
+        torch.utils.data.DataLoader: {batch_size: 1, shuffle: False, num_workers: 8}
 
 trainer:
   lightning.pytorch.Trainer:
-    max_epochs: 5
+    max_epochs: 10
     precision: bf16-true
-    #logger:
-    #  lightning.pytorch.loggers.WandbLogger: {project: chefbot_llm, save_dir: experiments, name: inital-test}
+    logger:
+      lightning.pytorch.loggers.WandbLogger: {project: chefbot_llm, save_dir: experiments, name: inital-test}
     callbacks: [lightning.pytorch.callbacks.RichProgressBar: {}]

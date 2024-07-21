@@ -40,8 +40,10 @@ class ChefBotDataset(Dataset):
             prompt, return_tensors='pt', add_generation_prompt=True, padding=True)
         y = self._tokenizer.encode(response, return_tensors='pt', padding=True)
         x_len = x.size(-1)
-        x = torch.cat([x, y], -1)
-        y = torch.cat([torch.tensor([[-100 for _ in range(x_len)]]), y], -1)
+        x = torch.cat((x, y), -1)
+        y = torch.cat((torch.tensor([[-100 for _ in range(x_len)]]), y), -1)
+        x = torch.cat((x, torch.tensor([[self._tokenizer.eos_token_id]])), -1)
+        y = torch.cat((y, torch.tensor([[self._tokenizer.eos_token_id]])), -1)
         return x, y
 
 

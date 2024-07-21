@@ -1,4 +1,5 @@
 # Imports
+import torch
 import lightning.pytorch as ptl
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 from utils import Config
@@ -20,7 +21,7 @@ class LitModule(ptl.LightningModule):
         if cfg.has('lora'):
             peft_config = LoraConfig(task_type=TaskType.CAUSAL_LM, **cfg.lora.dict())
             self.net = get_peft_model(self.net, peft_config)
-            self.net.print_trainable_parameters() 
+            self.net.print_trainable_parameters()
 
     def configure_optimizers(self):
         opt = self.cfg.optimizer.create_instance(
@@ -32,7 +33,7 @@ class LitModule(ptl.LightningModule):
             return opt
  
     def configure_callbacks(self) -> ptl.Callback:
-        return super().configure_callbacks()
+        return self.LoggingCallback()
 
     def training_step(self, batch: tuple[Tensor]) -> dict[str, Tensor]:
         results = {}
